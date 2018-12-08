@@ -25,19 +25,10 @@ public:
       }
   }
 
-  void savePoints(string filename)
+  void writePoints(FILE* fp)
   {
-    FILE* fp=fopen(filename, 'w');
-    if (!fp)
-      {
-	fprintf(stderr, "Failed to open file to save\n");
-	throw Exception();
-      }
     writeRecursive(root_, fp);
-    fclose(fp);
   }
-
-  
 
 private:
 
