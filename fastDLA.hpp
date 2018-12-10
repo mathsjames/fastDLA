@@ -1,6 +1,7 @@
 #include <vector>
 #include <random>
 #include <complex>
+#include <cmath>
 
 class ClusterTree
 {
@@ -38,18 +39,10 @@ public:
   }
 
 private:
-  
-  struct NodePointers
-  {
-    Node* NW;
-    Node* NE;
-    Node* SW;
-    Node* SE;
-  };
 
   union Node
   {
-    NodePointers pointers;
+    Node pointers[4];
     std::vector<complex<double>> points;
   };
 
@@ -101,10 +94,13 @@ private:
   {
     if (depth<maxDepth)
       {
+	int dirx, diry, dir;
 	do
 	  {
-	    //find direction
-	    if (!node->pointers[][])
+	    dirx = (real(currPoint)>real(centre));
+	    diry = (imag(currPoint)>imag(centre));
+	    dir = dirx+2*diry;
+	    if (!node->pointers[dir])
 	      {
 		if (depth<=scaleDepth && cabs(currPoint)>startDist)
 		  {
@@ -117,18 +113,19 @@ private:
 	      }
 	    else
 	      {
-		diffuseRecursive(node->pointers[][],depth+1,centre+);
+		int nextCentre = centre+(sideLength[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
+		diffuseRecursive(node->pointers[dir],depth+1,nextCentre);
 	      }
 	  }
-	while (particleFree && particleIsPresent());
+	while (particleFree && particleIsPresent(depth, centre));
       }
     else
       {
 	do
 	  {
-	    finishingStep(getNearestPoints(node));
+	    finishingStep(getNearestPoints(node, centre));
 	  }
-	while (particleFree && particleIsPresent());
+	while (particleFree && particleIsPresent(depth, centre));
       }
   }
 
@@ -145,8 +142,16 @@ private:
   {
   }
 
-  void getNearestPoints(Node* node)
+  void getNearestPoints(Node* node, complex<int> centre)
   {
+  }
+
+  bool particleIsPresent(int depth, complex<int> centre)
+  {
+    complex<double> disp = real(currPoint);
+    double icp=imag(currPoint);
+    return ( abs(rcp-real(centre))<sideLengths[depth] &&
+	     abs(icp-imag(centre))<sideLengths[depth] );
   }
 
   Node* root_;
