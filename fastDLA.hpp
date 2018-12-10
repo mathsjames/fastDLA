@@ -7,11 +7,10 @@ class ClusterTree
 public:
   ClusterTree(const double maxRadius, const int minLength = 4) : root_(nullptr)
   {
-    minSideLength = minLength;
-    maxDepth_ = 1 + ceil_log2(maxRadius / minSideLength);
+    maxDepth_ = 1 + ceil_log2(maxRadius / minLength);
 
-    sideLength=new double[maxDepth_];
-    double length = minSideLength;
+    sideLengths=new double[maxDepth_];
+    double length = minLength;
     for (int i = maxDepth_ - 1; i >= 0; i--)
       {
 	sideLength[i] = length;
@@ -75,11 +74,16 @@ private:
   void insertPoint()
   {
     startDist=std::max(startDist,cabs(currPoint)+2);
+    
     if (startDist>maxRadius)
       {
 	fprintf(stderr,"Cluster Exceeded maxRadius\n");
 	throw Exception();
       }
+    
+    if (startDist>sideLength[scaleDepth])
+      scaleDepth--;
+    
     insertRecursive(root_, 0, std::complex<int>(0,0));
   }
 
@@ -92,7 +96,7 @@ private:
     complex<double> nearest;
     double nextDist;
   };
-  
+
   void diffuseRecursive(Node* node, int depth, complex<int> centre)
   {
     if (depth<maxDepth)
@@ -102,7 +106,7 @@ private:
 	    //find direction
 	    if (!node->pointers[][])
 	      {
-		if (depth<scaleDepth && cabs(currPoint)>startDist)
+		if (depth<=scaleDepth && cabs(currPoint)>startDist)
 		  {
 		    resetParticle();
 		  }
@@ -128,9 +132,27 @@ private:
       }
   }
 
+  void step(double size)
+  {
+    currPoint+=size*randCirc();
+  }
+
+  void resetParticle()
+  {
+  }
+
+  void finishingStep(Nearest nearestInfo)
+  {
+  }
+
+  void getNearestPoints(Node* node)
+  {
+  }
+
   Node* root_;
   const int maxDepth;
-  const double minSideLength;
+  int scaleDepth;
+  int sideLengths[];
   double startDist;
   complex<double> currPoint;
   bool particleFree;
