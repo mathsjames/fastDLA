@@ -279,6 +279,27 @@ private:
 
   bool gridBeneath(complex<int> centre,int depth, int& dirx, int& diry)
   {
+    bool retval = false;
+    int i;
+    for (i = 0; i < grid.size(); i++)
+      {
+	complex<int> diff = grid[i].centre-centre;
+	if ( abs(real(diff))<sideLengths[depth] && abs(imag(diff))<sideLengths[depth])
+	  {
+	    dirx = sign(real(diff));
+	    diry = sign(imag(diff));
+	    retval = true;
+	    break;
+	  }
+      }
+    return retval;
+  }
+
+  int sign(int val)
+  {
+    if (val>0) return 1;
+    if (val<0) return -1;
+    return 0;
   }
 
   bool particleIsPresent(int depth, complex<int> centre)
