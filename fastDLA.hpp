@@ -8,13 +8,13 @@ class ClusterTree
 public:
   ClusterTree(const double maxRadius, const int halfMinLength = 2) : root_(nullptr)
   {
-    maxDepth_ = 1 + ceil(log2(maxRadius / minLength));
+    maxDepth_ = ceil(log2(maxRadius / halfMinLength));
 
-    sideLengths = new int[maxDepth_+1];
+    sideLengths = malloc(sizeof(int)*(maxDepth_+1));
     int length = halfMinLength;
     for (int i = maxDepth_; i >= 0; i--)
       {
-	sideLength[i] = length;
+	sideLengths[i] = length;
 	length*=2;
       }
 
@@ -30,14 +30,13 @@ public:
       }
     node->points.push_back(currPoint);
     startDist = 2;
-    nearestInfo.nearest = std::complex<double>(10*sideLength[0],10*sideLength[0]);
     markPoint();
   }
 
   ~ClusterTree()
   {
     clearRecursive(root_,depth);
-    delete sideLengths;
+    free(sideLengths);
     delete root_;
   }
 
@@ -60,7 +59,7 @@ private:
   union Node
   {
     Node* pointers[4];
-    std::vector<complex<double>> points;
+    std::vector<std::complex<double>> points;
   };
 
   void clearRecursive(Node* node, int depth)
@@ -79,14 +78,14 @@ private:
       }
   }
 
-  complex randcirc()
+  std::complex<double> randCirc()
   {
     return exp(std::complex<double>(0,unif2PI(generator)));
   }
 
   void aggregate()
   {
-    currPoint = startdist*randcirc();
+    currPoint = startDist*randCirc();
     particleFree = true;
     needToMark = true;
     diffuseRecursive(root_,0,std::complex<int>(0,0));
@@ -106,13 +105,13 @@ private:
   {
     startDist=std::max(startDist,cabs(currPoint)+2);
     
-    if (startDist>maxRadius)
+    if (startDist>sideLengths[0])
       {
 	fprintf(stderr,"Cluster Exceeded maxRadius\n");
 	throw Exception();
       }
     
-    if (startDist>sideLength[scaleDepth])
+    if (startDist>sideLengths[scaleDepth])
       scaleDepth--;
   }
 
@@ -121,7 +120,7 @@ private:
     markRecursive(root_, 0, std::complex<int>(0,0));
   }
 
-  void markRecursive(Node* node, int depth, complex<int> centre)
+  void markRecursive(Node* node, int depth, std::complex<int> centre)
   {
     if (depth!=maxDepth_)
       {
@@ -130,7 +129,7 @@ private:
 	  {
 	    for (diry = 0; diry < 2; diry++)
 	      {
-		complex<int> nextCentre = centre+sideLengths[depth+1]*std::complex<int>(2*dirx-1,2*diry-1);
+		std::complex<int> nextCentre = centre+sideLengths[depth+1]*std::complex<int>(2*dirx-1,2*diry-1);
 		if (isWithinLInf(currPoint,nextCentre,3*sideLengths[depth+1]))
 		  {
 		    dir = dirx+2*diry;
@@ -145,27 +144,27 @@ private:
       }
   }
 
-  bool isWithinLInf(complex<double> point1,complex<double> point2,double dist)
+  bool isWithinLInf(std::complex<double> point1,std::complex<double> point2,double dist)
   {
-    complex<double> disp = point1-point2;
+    std::complex<double> disp = point1-point2;
     return ( abs(real(disp))<=dist &&
 	     abs(imag(disp))<=dist );
   }
 
   struct Nearest
   {
-    complex<double> nearest;
-    double distToNearest;
-    double maxSafeDist;
+    std::complex<double> nearest;
+    double distToNearest2;
+    double maxSafeDist2;
   };
 
   struct gridEntry
   {
-    complex<int> centre;
-    double minDist;
-  }
+    std::complex<int> centre;
+    double minDist2;
+  };
 
-  void diffuseRecursive(Node* node, int depth, complex<int> centre)
+  void diffuseRecursive(Node* node, int depth, std::complex<int> centre)
   {
     while (particleFree)
       {
@@ -188,12 +187,12 @@ private:
 		      }
 		    else
 		      {
-			step(sideLength[depth]-2);
+			step(sideLengths[depth]-2);
 		      }
 		  }
 		else
 		  {
-		    int nextCentre = centre+(sideLength[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
+		    int nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
 		    diffuseRecursive(node->pointers[dir],depth+1,nextCentre);
 		  }
 	      }
@@ -203,16 +202,16 @@ private:
 		nearestInfo.maxSafeDist2=3*sideLengths[depth]-std::max(abs(real(currPoint-centre)),abs(imag(currPoint-centre)));
 		nearestInfo.maxSafeDist2=nearestInfo.maxSafeDist2*nearestInfo.maxSafeDist2;
 		nearestInfo.distToNearest2=nearestInfo.maxSafeDist2;
-		initialiseGrid(centre);
+		initializeGrid(centre);
 	      }
 	  }
 	else
 	  {
 	    if (grid.size()==0)
 	      {
-		if (nearestInfo.dist2ToNearest>=nearestInfo.maxSafeDist2)
+		if (nearestInfo.distToNearest2>=nearestInfo.maxSafeDist2)
 		  {
-		    step(nearestInfo.maxSafeDist);
+		    step(sqrt(nearestInfo.maxSafeDist2));
 		  }
 		else
 		  {
@@ -274,7 +273,7 @@ private:
   {
   }
 
-  void initializeGrid(complex<int> centre)
+  void initializeGrid(std::complex<int> centre)
   {
     int i, j;
     for (i = -1; i < 2; i++)
@@ -282,35 +281,35 @@ private:
 	for (j = -1; j < 2; j++)
 	  {
 	    gridEntry entry;
-	    entry.centre = centre+2*sideLength[maxDepth_]*std::complex<int>(i,j);
-	    entry.dist2 = squaredDistToSquare(centre);
+	    entry.centre = centre+2*sideLengths[maxDepth_]*std::complex<int>(i,j);
+	    entry.minDist2 = squaredDistToSquare(centre);
 	    grid.push_back(entry);
 	  }
       }
   }
 
-  double squaredDistToSquare(complex<int> centre)
+  double squaredDistToSquare(std::complex<int> centre)
   {
     double dist2 = 0;
-    double xOffset = abs(real(centre)-real(currPoint));
-    double yOffset = abs(imag(centre)-imag(currPoint));
-    if (x>sideLength[maxDepth_]) dist2+=(x-sideLength[maxDepth_])*(x-sideLength[maxDepth_]);
-    if (y>sideLength[maxDepth_]) dist2+=(y-sideLength[maxDepth_])*(y-sideLength[maxDepth_]);
+    double x = abs(real(centre)-real(currPoint));
+    double y = abs(imag(centre)-imag(currPoint));
+    if (x>sideLength[maxDepth_]) dist2+=(x-sideLengths[maxDepth_])*(x-sideLengths[maxDepth_]);
+    if (y>sideLength[maxDepth_]) dist2+=(y-sideLengths[maxDepth_])*(y-sideLengths[maxDepth_]);
     return dist2;
   }
 
-  void checkForCloser(Node* node, complex<int> centre)
+  void checkForCloser(Node* node, std::complex<int> centre)
   {
     for (int i = 0; i < node->points.size(); i++)
       {
-	complex<double> newPoint = node->points[i];
-	double dist2 = squaredDist(newPoint);
+	std::complex<double> newPoint = node->points[i];
+	double dist2 = squaredDist(currPoint,newPoint);
 	if (dist2<nearestInfo.maxSafeDist2)
 	  {
-	    if (dist2<nearestInfo.dist2ToNearest)
+	    if (dist2<nearestInfo.distToNearest2)
 	      {
-		nearestInfo.maxSafeDist2 = nearestInfo.dist2ToNearest;
-		nearestInfo.dist2ToNearest = dist2;
+		nearestInfo.maxSafeDist2 = nearestInfo.distToNearest2;
+		nearestInfo.distToNearest2 = dist2;
 		nearestInfo.nearest = newPoint;
 	      }
 	    else
@@ -322,34 +321,40 @@ private:
     updateGrid(centre);
   }
 
-  void updateGrid(complex<int> centre)
+  double squaredDist(std::complex<double> point1, std::complex<double> point2)
+  {
+    std::complex<double> disp = point1-point2;
+    return real(disp)*real(disp)+imag(disp)*imag(disp);
+  }
+
+  void updateGrid(std::complex<int> centre)
   {
     grid.remove_if( [&](gridEntry entry)
 		    {
-		      return entry.centre==centre || entry.dist2>nearestInfo.maxSafeDist2;
+		      return entry.centre==centre || entry.minDist2>nearestInfo.maxSafeDist2;
 		    });
   }
 
-  void markEmpty(complex<int> centre,int depth)
+  void markEmpty(std::complex<int> centre,int depth)
   {
     grid.remove_if( [&](gridEntry entry)
 		    {
-		      complex<int> diff = entry.centre-centre;
-		      return abs(real(diff))<sideLengths[depth] && abs(imag(diff))<sideLengths[depth]);
+		      std::complex<int> diff = entry.centre-centre;
+		      return (abs(real(diff))<sideLengths[depth] && abs(imag(diff))<sideLengths[depth]);
 		    });
-      }
+}
 
-  bool gridBeneath(complex<int> centre,int depth, int& dirx, int& diry)
+  bool gridBeneath(std::complex<int> centre,int depth, int& dirx, int& diry)
   {
     bool retval = false;
 
     std::list<gridEntry>::iterator it;
     gridEntry entry;
 
-    for (it=mylist.begin(); it != mylist.end(); ++it)
+    for (it=grid.begin(); it != grid.end(); ++it)
       {
 	entry=*it;
-	complex<int> diff = entry.centre-centre;
+	std::complex<int> diff = entry.centre-centre;
 	if ( abs(real(diff))<sideLengths[depth] && abs(imag(diff))<sideLengths[depth])
 	  {
 	    dirx = sign(real(diff));
@@ -361,29 +366,30 @@ private:
     return retval;
   }
 
-  int sign(int val)
-  {
-    if (val>0) return 1;
-    if (val<0) return -1;
-    return 0;
-  }
-
-  bool particleIsPresent(int depth, complex<int> centre)
-  {
-    return isWithinLInf(currPoint,centre,sideLengths[depth];
-  }
-
-  Node* root_;
-  const int maxDepth;
-  int scaleDepth;
-  int sideLengths[];
-  double startDist;
-  complex<double> currPoint;
-  bool particleFree;
-  Nearest nearestInfo;
-  std::list<gridEntry> grid;
-  bool gridEmpty;
-  bool needToMark;
-  std::default_random_engine generator;
-  std::uniform_real_distribution<double> unif2PI(0.0,2*PI);
+int sign(int val)
+{
+  if (val>0) return 1;
+  if (val<0) return -1;
+  return 0;
 }
+
+bool particleIsPresent(int depth, std::complex<int> centre)
+{
+  return isWithinLInf(currPoint,centre,sideLengths[depth]);
+}
+
+Node* root_;
+const int maxDepth_;
+int scaleDepth;
+int sideLengths[];
+double startDist;
+std::complex<double> currPoint;
+bool particleFree;
+bool gettingNearest;
+Nearest nearestInfo;
+std::list<gridEntry> grid;
+bool gridEmpty;
+bool needToMark;
+std::default_random_engine generator;
+std::uniform_real_distribution<double> unif2PI(0.0,2*PI);
+};
