@@ -18,6 +18,8 @@ public:
 	length*=2;
       }
 
+    root_ = new Node();
+
     currPoint = std::complex<double>(0.0,0.0);
     Node* node = root_->pointers[3] = new Node();
     int depth=1;
@@ -34,8 +36,9 @@ public:
 
   ~ClusterTree()
   {
-    clearRecursive();
+    clearRecursive(root_,depth);
     delete sideLengths;
+    delete root_;
   }
 
   void grow(int n)
@@ -59,6 +62,22 @@ private:
     Node* pointers[4];
     std::vector<complex<double>> points;
   };
+
+  void clearRecursive(Node* node, int depth)
+  {
+    if (depth!=maxDepth)
+      {
+	int i;
+	for (i=0;i<4;i++)
+	  {
+	    if (node->pointers[i])
+	      {
+		clearRecursive(node->pointers[i],depth+1);
+		delete node->pointers[i];
+	      }
+	  }
+      }
+  }
 
   complex randcirc()
   {
@@ -319,7 +338,7 @@ private:
 
     std::list<gridEntry>::iterator it;
     gridEntry entry;
-    
+
     for (it=mylist.begin(); it != mylist.end(); ++it)
       {
 	entry=*it;
