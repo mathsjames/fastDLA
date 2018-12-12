@@ -1,15 +1,18 @@
 #include <vector>
 #include <list>
 #include <random>
+#include <exception>
 #include <complex>
 #include <cmath>
+#include <chrono>
+#include <iostream>
 
-#define two_PI = 6.2831853072
+#define two_PI 6.2831853072
 
 class ClusterTree
 {
 public:
-  ClusterTree(const double maxRadius, const int halfMinLength = 2) : root_(nullptr)
+  ClusterTree(const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
   {
     maxDepth_ = ceil(log2(maxRadius / halfMinLength));
 
@@ -20,6 +23,8 @@ public:
 	sideLengths[i] = length;
 	length*=2;
       }
+
+    generator.seed(seed);
 
     root_ = new Node();
 
@@ -38,7 +43,7 @@ public:
 
   ~ClusterTree()
   {
-    clearRecursive(root_,depth);
+    clearRecursive(root_, 0);
     free(sideLengths);
     delete root_;
   }
@@ -59,7 +64,7 @@ public:
 
 private:
 
-  union Node
+  struct Node
   {
     Node* pointers[4];
     std::vector<std::complex<double> > points;
@@ -67,7 +72,7 @@ private:
 
   void clearRecursive(Node* node, int depth)
   {
-    if (depth!=maxDepth)
+    if (depth!=maxDepth_)
       {
 	int i;
 	for (i=0;i<4;i++)
@@ -83,7 +88,7 @@ private:
 
   void writeRecursive(Node* node, int depth, FILE* fp)
   {
-    if (depth!=maxDepth)
+    if (depth!=maxDepth_)
       {
 	int i;
 	for (i=0;i<4;i++)
@@ -96,7 +101,7 @@ private:
       }
     else
       {
-	fwrite(node->points,sizeof(std::complex<double>),node->points.size(),fp);
+	fwrite(&(node->points[0]),sizeof(std::complex<double>),node->points.size(),fp);
       }
   }
 
@@ -125,12 +130,12 @@ private:
 
   void updateStartDist()
   {
-    startDist=std::max(startDist,cabs(currPoint)+2);
+    startDist=std::max(startDist,abs(currPoint)+2);
     
     if (startDist>sideLengths[0])
       {
 	fprintf(stderr,"Cluster Exceeded maxRadius\n");
-	throw Exception();
+	throw 373;
       }
     
     if (startDist>sideLengths[scaleDepth])
@@ -152,7 +157,7 @@ private:
 	    for (diry = 0; diry < 2; diry++)
 	      {
 		std::complex<int> nextCentre = centre+sideLengths[depth+1]*std::complex<int>(2*dirx-1,2*diry-1);
-		if (isWithinLInf(currPoint,nextCentre,3*sideLengths[depth+1]))
+		if (isWithinLInf(currPoint,cast(nextCentre),3*sideLengths[depth+1]))
 		  {
 		    dir = dirx+2*diry;
 		    if (!node->pointers[dir])
@@ -195,7 +200,7 @@ private:
 	    if (!particleIsPresent(depth, centre))
 	      break;
 
-	    if (depth!=maxDepth)
+	    if (depth!=maxDepth_)
 	      {
 		int dirx, diry, dir;
 		dirx = (std::real(currPoint)>std::real(centre));
@@ -203,7 +208,7 @@ private:
 		dir = dirx+2*diry;
 		if (!node->pointers[dir])
 		  {
-		    if (depth<=scaleDepth && cabs(currPoint)>startDist)
+		    if (depth<=scaleDepth && abs(currPoint)>startDist)
 		      {
 			resetParticle();
 		      }
@@ -214,14 +219,14 @@ private:
 		  }
 		else
 		  {
-		    int nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
+		    std::complex<int> nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
 		    diffuseRecursive(node->pointers[dir],depth+1,nextCentre);
 		  }
 	      }
 	    else
 	      {
 		gettingNearest = true;
-		nearestInfo.maxSafeDist2=3*sideLengths[depth]-std::max(abs(std::real(currPoint-centre)),abs(std::imag(currPoint-centre)));
+		nearestInfo.maxSafeDist2=3*sideLengths[depth]-std::max(abs(std::real(currPoint-cast(centre))),abs(std::imag(currPoint-cast(centre))));
 		nearestInfo.maxSafeDist2=nearestInfo.maxSafeDist2*nearestInfo.maxSafeDist2;
 		nearestInfo.distToNearest2=nearestInfo.maxSafeDist2;
 		initializeGrid(centre);
@@ -264,7 +269,7 @@ private:
 			int dir = dirx+2*diry;
 			if (node->pointers[dir])
 			  {
-			    int nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
+			    std::complex<int> nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
 			    diffuseRecursive(node->pointers[dir],depth+1,nextCentre);
 			  }
 			else
@@ -364,7 +369,7 @@ private:
 		      std::complex<int> diff = entry.centre-centre;
 		      return (abs(std::real(diff))<sideLengths[depth] && abs(std::imag(diff))<sideLengths[depth]);
 		    });
-}
+  }
 
   bool gridBeneath(std::complex<int> centre,int depth, int& dirx, int& diry)
   {
@@ -388,30 +393,35 @@ private:
     return retval;
   }
 
-int sign(int val)
-{
-  if (val>0) return 1;
-  if (val<0) return -1;
-  return 0;
-}
+  int sign(int val)
+  {
+    if (val>0) return 1;
+    if (val<0) return -1;
+    return 0;
+  }
 
-bool particleIsPresent(int depth, std::complex<int> centre)
-{
-  return isWithinLInf(currPoint,centre,sideLengths[depth]);
-}
+  bool particleIsPresent(int depth, std::complex<int> centre)
+  {
+    return isWithinLInf(currPoint,cast(centre),sideLengths[depth]);
+  }
 
-Node* root_;
-int maxDepth_;
-int scaleDepth;
-int *sideLengths;
-double startDist;
-std::complex<double> currPoint;
-bool particleFree;
-bool gettingNearest;
-Nearest nearestInfo;
-std::list<gridEntry> grid;
-bool gridEmpty;
-bool needToMark;
-std::default_random_engine generator;
-std::uniform_real_distribution<double> unif2PI(0.0,two_PI);
+  std::complex<double> cast(std::complex<int> z)
+  {
+    return std::complex<double>(std::real(z),std::imag(z));
+  }
+
+  Node* root_;
+  int maxDepth_;
+  int scaleDepth;
+  int *sideLengths;
+  double startDist;
+  std::complex<double> currPoint;
+  bool particleFree;
+  bool gettingNearest;
+  Nearest nearestInfo;
+  std::list<gridEntry> grid;
+  bool gridEmpty;
+  bool needToMark;
+  std::mt19937 generator;
+  std::uniform_real_distribution<double> unif2PI = std::uniform_real_distribution<double>(0.0,two_PI);
 };

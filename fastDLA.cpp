@@ -1,4 +1,5 @@
 #include "fastDLA.hpp"
+#include <iostream>
 
 int main(int argc, char** argv)
 {
@@ -24,9 +25,9 @@ int main(int argc, char** argv)
   double maxRadius = 5.0+2*pow(n,0.75); //for asymptically big enough maxRadius need exponent to be bigger than 1/d where d is dimension of DLA clusters
   ClusterTree cluster(maxRadius);
 
-  printf("Starting to grow cluster\n");
+  std::cout << "Starting to grow cluster" << std::endl;
   cluster.grow(n);
-  printf("Finished growing cluster\n");
+  std::cout << "Finished growing cluster" << std::endl;
 
   if (filename[0])
     {
