@@ -131,7 +131,7 @@ private:
 	    for (diry = 0; diry < 2; diry++)
 	      {
 		complex<int> nextCentre = centre+sideLengths[depth+1]*std::complex<int>(2*dirx-1,2*diry-1);
-		if (isWithin(currPoint,nextCentre,3*sideLengths[depth+1]))
+		if (isWithinLInf(currPoint,nextCentre,3*sideLengths[depth+1]))
 		  {
 		    dir = dirx+2*diry;
 		    if (!node->pointers[dir])
@@ -143,6 +143,13 @@ private:
 	      }
 	  }
       }
+  }
+
+  bool isWithinLInf(complex<double> point1,complex<double> point2,double dist)
+  {
+    complex<double> disp = point1-point2;
+    return ( abs(real(disp))<=dist &&
+	     abs(imag(disp))<=dist );
   }
 
   struct Nearest
@@ -363,9 +370,7 @@ private:
 
   bool particleIsPresent(int depth, complex<int> centre)
   {
-    complex<double> disp = real(currPoint);
-    return ( abs(real(disp))<=sideLengths[depth] &&
-	     abs(imag(disp))<=sideLengths[depth] );
+    return isWithinLInf(currPoint,centre,sideLengths[depth];
   }
 
   Node* root_;
