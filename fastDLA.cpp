@@ -1,6 +1,6 @@
 #include "fastDLA.hpp"
 
-int main(int argc, int argv)
+int main(int argc, char** argv)
 {
   int n, seed;
   char filename[1000];
@@ -21,7 +21,7 @@ int main(int argc, int argv)
       fprintf(stderr,"First argument (Cluster Size) is mandatory.\nSecond argument (Filename to save to) and third argument (seed) are optional.\n");
     }
 
-  double maxRadius = 5.0+pow(n,0.75);
+  double maxRadius = 5.0+2*pow(n,0.75); //for asymptically big enough maxRadius need exponent to be bigger than 1/d where d is dimension of DLA clusters
   ClusterTree cluster(maxRadius);
 
   printf("Starting to grow cluster\n");
@@ -30,7 +30,7 @@ int main(int argc, int argv)
 
   if (filename[0])
     {
-      FILE* fp=fopen(filename, 'w');
+      FILE* fp=fopen(filename, "w");
       if (!fp)
 	{
 	  fprintf(stderr, "Failed to open file to save\n");
