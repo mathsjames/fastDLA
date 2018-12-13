@@ -7,15 +7,13 @@
 #include <chrono>
 #include <iostream>
 
-#define two_PI 6.2831853072
-
 class ClusterTree
 {
 public:
   ClusterTree(const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
   {
     maxDepth_ = ceil(log2(maxRadius / halfMinLength));
-
+    std::cout << "maxDepth" << maxDepth_ << std::endl;
     sideLengths =(int*) malloc(sizeof(int)*(maxDepth_+1));
     int length = halfMinLength;
     for (int i = maxDepth_; i >= 0; i--)
@@ -25,6 +23,8 @@ public:
       }
 
     generator.seed(seed);
+    unif2PI = std::uniform_real_distribution<double>(0.0,two_PI);
+    cauchy = std::cauchy_distribution<double>(0.0,1.0);
 
     root_ = new Node();
 
@@ -39,6 +39,8 @@ public:
     node->points.push_back(currPoint);
     startDist = 2;
     markPoint();
+
+    gettingNearest = false;
   }
 
   ~ClusterTree()
@@ -53,6 +55,7 @@ public:
     int i;
     for (i = 0; i < n; i++)
       {
+	std::cout << "aggregate " << i << std::endl;
 	aggregate();
       }
   }
@@ -107,7 +110,7 @@ private:
 
   std::complex<double> randCirc()
   {
-    return exp(std::complex<double>(0,unif2PI(generator)));
+    return std::exp(std::complex<double>(0,unif2PI(generator)));
   }
 
   void aggregate()
@@ -118,12 +121,15 @@ private:
     diffuseRecursive(root_,0,std::complex<int>(0,0));
     while (particleFree)
       {
+	std::cout << "resetting particle" << std::endl;
 	resetParticle();
 	diffuseRecursive(root_,0,std::complex<int>(0,0));
       }
+    std::cout << "Done diffusing at " << real(currPoint) << "+i*" << imag(currPoint) << std::endl;
     updateStartDist();
     if (needToMark)
       {
+	std::cout << "Marking" << std::endl;
 	markPoint();
       }
   }
@@ -195,11 +201,13 @@ private:
   {
     while (particleFree)
       {
+	std::cout << "currPoint" << real(currPoint) << "+i" << imag(currPoint) << std::endl;
+	std::cout << "depth:" << depth << " node:" << (long) node << " centre:" << real(centre) << "+i" << imag(centre) << std::endl;
 	if (!gettingNearest)
 	  {
 	    if (!particleIsPresent(depth, centre))
 	      break;
-
+	    std::cout << "particle present" << std::endl;
 	    if (depth!=maxDepth_)
 	      {
 		int dirx, diry, dir;
@@ -242,7 +250,7 @@ private:
 		  }
 		else
 		  {
-		    finishingStep(nearestInfo);
+		    finishingStep();
 		    if (!particleFree)
 		      {
 			if (!node->points.empty())
@@ -294,10 +302,36 @@ private:
 
   void resetParticle()
   {
+    double ratioOut = abs(currPoint)/startDist;
+    std::complex<double> z = harmonicToCircle(ratioOut);
+    currPoint *= z/ratioOut;
+  }
+  
+  std::complex<double> harmonicToCircle(double absPos)
+  {
+    std::complex<double> z = randCirc();
+    z = (z-cx_1)/(z+cx_1);
+    z *= (absPos-1)/(absPos+1);
+    z = -(z+cx_1)/(z-cx_1);
+    return z;
   }
 
-  void finishingStep(Nearest nearestInfo)
+  void finishingStep()
   {
+    double d1 = nearestInfo.distToNearest2;
+    double d2 = nearestInfo.maxSafeDist2;
+    double theta=acos((1+(d2-1)*(d2-1)-d1*d1)/(2*(d2-1)));
+    double r2=((d2-1)*(d2-1)+d1*d1-1)/(2*d1);
+    double r1=sqrt(1-(d1-r2)*(d1-r2));
+    std::complex<double> alpha=std::complex<double>(r1,-r2);
+    std::complex<double> beta=std::complex<double>(-r1,-r2);
+    std::complex<double> D=(d2-1-beta)/(d2-1-alpha);
+    std::complex<double> y1=pow(alpha*D/beta,PI/theta);
+    double y2=real(y1)+imag(y1)*cauchy(generator);
+    std::complex<double> y3=pow(y2,theta/PI);
+    std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
+    currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
+    particleFree = (y2>=0);
   }
 
   void initializeGrid(std::complex<int> centre)
@@ -423,5 +457,10 @@ private:
   bool gridEmpty;
   bool needToMark;
   std::mt19937 generator;
-  std::uniform_real_distribution<double> unif2PI = std::uniform_real_distribution<double>(0.0,two_PI);
+  std::uniform_real_distribution<double> unif2PI;
+  std::cauchy_distribution<double> cauchy;
+
+  const std::complex<double> cx_1 = std::complex<double>(1.0,0.0);
+  const double PI = 3.1415926535;
+  const double two_PI = 6.2831853072;
 };

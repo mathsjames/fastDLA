@@ -20,6 +20,7 @@ int main(int argc, char** argv)
       break;
     default:
       fprintf(stderr,"First argument (Cluster Size) is mandatory.\nSecond argument (Filename to save to) and third argument (seed) are optional.\n");
+      return 1;
     }
 
   double maxRadius = 5.0+2*pow(n,0.75); //for asymptically big enough maxRadius need exponent to be bigger than 1/d where d is dimension of DLA clusters
