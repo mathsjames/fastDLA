@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   ClusterTree cluster(maxRadius);
 
   std::cout << "Starting to grow cluster" << std::endl;
-  cluster.grow(n);
+  cluster.grow(n-1);//one particle beside the root was already added at construction
   std::cout << "Finished growing cluster" << std::endl;
 
   if (filename[0])

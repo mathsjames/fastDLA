@@ -13,7 +13,8 @@ public:
   ClusterTree(const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
   {
     maxDepth_ = ceil(log2(maxRadius / halfMinLength));
-    std::cout << "maxDepth" << maxDepth_ << std::endl;
+    //std::cout << "maxDepth" << maxDepth_ << std::endl;
+    //std::cout << "sizeof Node" << sizeof(Node) << std::endl;
     sideLengths =(int*) malloc(sizeof(int)*(maxDepth_+1));
     int length = halfMinLength;
     for (int i = maxDepth_; i >= 0; i--)
@@ -28,17 +29,23 @@ public:
 
     root_ = new Node();
 
-    currPoint = std::complex<double>(0.0,0.0);
-    Node* node = root_->pointers[3] = new Node();
+    std::complex<double> zeroPoint = std::complex<double>(0.0,0.0);
+    std::complex<double> firstPoint = 2.0*randCirc();
+    int dir = (std::real(firstPoint)>0)+2*(std::imag(firstPoint)>0);
+    Node* node = root_->pointers[dir] = new Node();
     int depth=1;
     while (depth<maxDepth_)
       {
-	node = node->pointers[0] = new Node();
+	node = node->pointers[3-dir] = new Node();
 	depth++;
       }
-    node->points.push_back(currPoint);
-    startDist = 2;
+    node->points.push_back(zeroPoint);
+    node->points.push_back(firstPoint);
+    currPoint = firstPoint;
     markPoint();
+
+    startDist = 4;
+    scaleDepth = maxDepth_;
 
     gettingNearest = false;
   }
@@ -55,7 +62,7 @@ public:
     int i;
     for (i = 0; i < n; i++)
       {
-	std::cout << "aggregate " << i << std::endl;
+	//std::cout << "aggregate " << i << std::endl;
 	aggregate();
       }
   }
@@ -116,20 +123,20 @@ private:
   void aggregate()
   {
     currPoint = startDist*randCirc();
+    //std::cout << "Starting diffusing at " << currPoint << std::endl;
     particleFree = true;
     needToMark = true;
     diffuseRecursive(root_,0,std::complex<int>(0,0));
-    while (particleFree)
+    if (particleFree)
       {
-	std::cout << "resetting particle" << std::endl;
-	resetParticle();
-	diffuseRecursive(root_,0,std::complex<int>(0,0));
+	fprintf(stderr,"Cluster Exceeded maxRadius\n");
+	throw 373;
       }
-    std::cout << "Done diffusing at " << real(currPoint) << "+i*" << imag(currPoint) << std::endl;
+    //std::cout << "Done diffusing at " << std::real(currPoint) << "+i" << std::imag(currPoint) << std::endl;
     updateStartDist();
     if (needToMark)
       {
-	std::cout << "Marking" << std::endl;
+	//std::cout << "Marking" << std::endl;
 	markPoint();
       }
   }
@@ -201,13 +208,15 @@ private:
   {
     while (particleFree)
       {
-	std::cout << "currPoint" << real(currPoint) << "+i" << imag(currPoint) << std::endl;
-	std::cout << "depth:" << depth << " node:" << (long) node << " centre:" << real(centre) << "+i" << imag(centre) << std::endl;
+	//std::cout << "currPoint " << currPoint << std::endl;
+	//std::cout << "depth:" << depth << " node:" << (long) node << " centre:" << real(centre) << "+i" << imag(centre) << std::endl;
 	if (!gettingNearest)
 	  {
+	    //std::cout << "looking for particle" << std::endl;
 	    if (!particleIsPresent(depth, centre))
 	      break;
-	    std::cout << "particle present" << std::endl;
+	    //std::cout << "particle present" << std::endl;
+	    //std::cout << "depth:" << depth << "  maxDepth:" << maxDepth_ << std::endl;
 	    if (depth!=maxDepth_)
 	      {
 		int dirx, diry, dir;
@@ -242,6 +251,8 @@ private:
 	  }
 	else
 	  {
+	    //std::cout << "looking for nearby particles" << std::endl;
+	    //std::cout << "grid size:" << grid.size() << std::endl;
 	    if (grid.size()==0)
 	      {
 		if (nearestInfo.distToNearest2>=nearestInfo.maxSafeDist2)
@@ -264,6 +275,7 @@ private:
 	      }
 	    else
 	      {
+		//std::cout << "depth:" << depth << "  maxDepth:" << maxDepth_ << std::endl;
 		if (depth==maxDepth_)
 		  {
 		    checkForCloser(node,centre);
@@ -271,10 +283,11 @@ private:
 		  }
 		else
 		  {
-		    int dirx, diry;
+		    int dirx, diry; // passed by reference to be set bu gridBeneath
 		    if (gridBeneath(centre,depth,dirx,diry))
 		      {
 			int dir = dirx+2*diry;
+			//std::cout << "dir (x,y,):" << dirx << diry <<dir << std::endl;
 			if (node->pointers[dir])
 			  {
 			    std::complex<int> nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
@@ -297,11 +310,14 @@ private:
 
   void step(double size)
   {
+    //std::cout << "stepping from " << currPoint << " to ";
     currPoint+=size*randCirc();
+    //std::cout << currPoint << std::endl;
   }
 
   void resetParticle()
   {
+    //std::cout << "resetting particle" << std::endl;
     double ratioOut = abs(currPoint)/startDist;
     std::complex<double> z = harmonicToCircle(ratioOut);
     currPoint *= z/ratioOut;
@@ -318,8 +334,12 @@ private:
 
   void finishingStep()
   {
-    double d1 = nearestInfo.distToNearest2;
-    double d2 = nearestInfo.maxSafeDist2;
+    //std::cout << "fancy stepping from " << currPoint << std::endl;
+    //std::cout << "Nearest:" << nearestInfo.nearest << std::endl;
+    //std::cout << "squared distance:" << nearestInfo.distToNearest2 << std::endl;
+    //std::cout << "squared next distance:" << nearestInfo.maxSafeDist2 << std::endl;
+    double d1 = sqrt(nearestInfo.distToNearest2)/2;
+    double d2 = sqrt(nearestInfo.maxSafeDist2)/2;
     double theta=acos((1+(d2-1)*(d2-1)-d1*d1)/(2*(d2-1)));
     double r2=((d2-1)*(d2-1)+d1*d1-1)/(2*d1);
     double r1=sqrt(1-(d1-r2)*(d1-r2));
@@ -328,10 +348,13 @@ private:
     std::complex<double> D=(d2-1-beta)/(d2-1-alpha);
     std::complex<double> y1=pow(alpha*D/beta,PI/theta);
     double y2=real(y1)+imag(y1)*cauchy(generator);
-    std::complex<double> y3=pow(y2,theta/PI);
+    std::complex<double> y3=pow(std::complex<double>(y2,0.0),theta/PI);
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
     currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
     particleFree = (y2>=0);
+    //std::cout << "stepped to " << currPoint << std::endl;
+    //std::cout << "finished?:" << !particleFree << std::endl;
+    //std::cout << "Report:" << d1 << " " << d2 << " " << theta << " " << r2 << " " << r1 << " " << alpha << " " << beta << " " << D << " " << y1 << " " << y2 << " " << y3 << " " << y4 << std::endl;
   }
 
   void initializeGrid(std::complex<int> centre)
@@ -418,20 +441,13 @@ private:
 	std::complex<int> diff = entry.centre-centre;
 	if ( abs(std::real(diff))<sideLengths[depth] && abs(std::imag(diff))<sideLengths[depth])
 	  {
-	    dirx = sign(std::real(diff));
-	    diry = sign(std::imag(diff));
+	    dirx = (std::real(diff)>=0);
+	    diry = (std::imag(diff)>=0);
 	    retval = true;
 	    break;
 	  }
       }
     return retval;
-  }
-
-  int sign(int val)
-  {
-    if (val>0) return 1;
-    if (val<0) return -1;
-    return 0;
   }
 
   bool particleIsPresent(int depth, std::complex<int> centre)
