@@ -41,6 +41,7 @@ public:
       }
     node->points.push_back(zeroPoint);
     node->points.push_back(firstPoint);
+    //std::cout << "First Point " << firstPoint << std::endl;
     currPoint = firstPoint;
     markPoint();
 
@@ -48,6 +49,7 @@ public:
     scaleDepth = maxDepth_;
 
     gettingNearest = false;
+    addingPoint = false;
   }
 
   ~ClusterTree()
@@ -105,12 +107,15 @@ private:
 	  {
 	    if (node->pointers[i])
 	      {
+		//std::cout << "going down to depth " << depth << " in direction " << i << std::endl;
 		writeRecursive(node->pointers[i], depth+1, fp);
+		//std::cout << "going up" << std::endl;
 	      }
 	  }
       }
     else
       {
+	//std::cout << "writing " << node->points.size() << " from node " << node << std::endl;
 	fwrite(&(node->points[0]),sizeof(std::complex<double>),node->points.size(),fp);
       }
   }
@@ -134,6 +139,7 @@ private:
       }
     //std::cout << "Done diffusing at " << std::real(currPoint) << "+i" << std::imag(currPoint) << std::endl;
     updateStartDist();
+    //std::cout << "Start radius is now " << startDist << std::endl;
     if (needToMark)
       {
 	//std::cout << "Marking" << std::endl;
@@ -175,6 +181,7 @@ private:
 		    dir = dirx+2*diry;
 		    if (!node->pointers[dir])
 		      {
+			//std::cout << "creating node with centre " << nextCentre << std::endl;
 			node->pointers[dir] = new Node();
 		      }
 		    markRecursive(node->pointers[dir],depth+1,nextCentre);
@@ -264,11 +271,7 @@ private:
 		    finishingStep();
 		    if (!particleFree)
 		      {
-			if (!node->points.empty())
-			  {
-			    needToMark = false;
-			  }
-			node->points.push_back(currPoint);
+			addingPoint = true;
 		      }
 		  }
 		gettingNearest = false;
@@ -304,6 +307,28 @@ private:
 		      }
 		  }
 	      }
+	  }
+      }
+    if (addingPoint && particleIsPresent(depth, centre))
+      {
+	if (depth==maxDepth_)
+	  {
+	    if (!node->points.empty())
+	      {
+		needToMark = false;
+	      }
+	    //std::cout << "adding particle at " << currPoint << " to node " << node << " with depth " << depth << std::endl;
+	    node->points.push_back(currPoint);
+	    addingPoint=false;
+	  }
+	else
+	  {
+	    int dirx, diry, dir;
+	    dirx = (std::real(currPoint)>std::real(centre));
+	    diry = (std::imag(currPoint)>std::imag(centre));
+	    dir = dirx+2*diry;
+	    std::complex<int> nextCentre = centre+(sideLengths[depth]/2)*std::complex<int>(2*dirx-1,2*diry-1);
+	    diffuseRecursive(node->pointers[dir],depth+1,nextCentre);
 	  }
       }
   }
@@ -468,6 +493,7 @@ private:
   std::complex<double> currPoint;
   bool particleFree;
   bool gettingNearest;
+  bool addingPoint;
   Nearest nearestInfo;
   std::list<gridEntry> grid;
   bool gridEmpty;

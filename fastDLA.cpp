@@ -23,7 +23,7 @@ int main(int argc, char** argv)
       return 1;
     }
 
-  double maxRadius = 5.0+2*pow(n,0.75); //for asymptically big enough maxRadius need exponent to be bigger than 1/d where d is dimension of DLA clusters
+  double maxRadius = 25.0+5*n;//pow(n,0.75); //for asymptically big enough maxRadius need exponent to be bigger than 1/d where d is dimension of DLA clusters
   ClusterTree cluster(maxRadius);
 
   std::cout << "Starting to grow cluster" << std::endl;
