@@ -61,6 +61,11 @@ public:
       }
   }
 
+  writePoints(FILE* fp)
+  {
+    fwrite(points,sizeof(std::complex<double>),pointsAdded,fp);
+  }
+
 private:
 
   void aggregate()
@@ -183,7 +188,20 @@ private:
   
   void finishingStep(NearestInfo nearestInfo)
   {
-    
+    double d1 = sqrt(nearestInfo.distToNearest2)/2;
+    double d2 = sqrt(nearestInfo.maxSafeDist2)/2;
+    double theta=acos((1+(d2-1)*(d2-1)-d1*d1)/(2*(d2-1)));
+    double r2=((d2-1)*(d2-1)+d1*d1-1)/(2*d1);
+    double r1=sqrt(1-(d1-r2)*(d1-r2));
+    std::complex<double> alpha=std::complex<double>(r1,-r2);
+    std::complex<double> beta=std::complex<double>(-r1,-r2);
+    std::complex<double> D=(d2-1-beta)/(d2-1-alpha);
+    std::complex<double> y1=std::pow(alpha*D/beta,PI/theta);
+    double y2=real(y1)+imag(y1)*cauchy(generator);
+    std::complex<double> y3=pow(std::complex<double>(y2,0.0),theta/PI);
+    std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
+    currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
+    particleFree = (y2>=0);
   }
 
   void step(int layer)
