@@ -1,20 +1,23 @@
-#include "fastDLA.hpp"
+#include "treeDLA.hpp"
 #include <iostream>
 
 int main(int argc, char** argv)
 {
   int n, seed;
   char filename[1000];
+  char method[10];
 
   seed=time(NULL);
   filename[0]='\0';
 
   switch(argc-1)
     {
+    case 4:
+      sscanf(argv[4],"%d",&seed);
     case 3:
-      sscanf(argv[3],"%d",&seed);
+      sscanf(argv[3],"%s",&filename);
     case 2:
-      sscanf(argv[2],"%s",&filename);
+      sscanf(argv[2],"%s",&method);
     case 1:
       sscanf(argv[1],"%d",&n);
       break;
