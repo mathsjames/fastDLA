@@ -264,7 +264,9 @@ private:
 	      {
 		if (nearestInfo.distToNearest2>=nearestInfo.maxSafeDist2)
 		  {
-		    step(sqrt(nearestInfo.maxSafeDist2));
+		    //std::cout << "distToNearest2 " << nearestInfo.distToNearest2 << std::endl;
+		    //std::cout << "maxSafeDist2 " << nearestInfo.maxSafeDist2 << std::endl;
+		    step(sqrt(nearestInfo.maxSafeDist2)-2);
 		  }
 		else
 		  {
@@ -371,7 +373,7 @@ private:
     std::complex<double> alpha=std::complex<double>(r1,-r2);
     std::complex<double> beta=std::complex<double>(-r1,-r2);
     std::complex<double> D=(d2-1-beta)/(d2-1-alpha);
-    std::complex<double> y1=pow(alpha*D/beta,PI/theta);
+    std::complex<double> y1=std::pow(alpha*D/beta,PI/theta);
     double y2=real(y1)+imag(y1)*cauchy(generator);
     std::complex<double> y3=pow(std::complex<double>(y2,0.0),theta/PI);
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
