@@ -5,7 +5,12 @@
 #include <exception>
 #include <cmath>
 
-class ClusterGrid
+#ifndef SECOND_H
+#define SECOND_H
+#include "baseDLA.hpp"
+#endif
+
+class ClusterGrid : public baseDLA
 {
 public:
   ClusterGrid(const int numberOfParticles, const double maxRadius, const double minLength = 1, const double minPointGridMesh = 4, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
@@ -28,10 +33,10 @@ public:
 	std::fill(layers[i],layers[i]+layerSizes[i]*layerSizes[i],0);
       }
     
-    pointGridSize = floor(2*maxRadius/minPointGridMesh);
-    pointGridMesh = 2*maxRadius/pointGridSize;
-    pointGrid = new std::vector<int>[pointGridSize*pointGridSize];
-    std::fill(pointGrid, pointGrid+pointGridSize*pointGridSize, std::vector<int>(0));
+    pointsGridSize = floor(2*maxRadius/minPointGridMesh);
+    pointsGridMesh = 2*maxRadius/pointsGridSize;
+    pointsGrid = new std::vector<int>[pointsGridSize*pointsGridSize];
+    std::fill(pointsGrid, pointsGrid+pointsGridSize*pointsGridSize, std::vector<int>(0));
 
     points = new std::complex<double>[numberOfParticles+1];
     pointsAdded = 0;
@@ -52,6 +57,25 @@ public:
     grow(numberOfParticles-1);
   }
 
+  ~ClusterGrid()
+  {
+    delete layerSizes;
+    delete layerMeshes;
+    for (int i=0; i<layerCount; i++)
+      {
+	delete (layers[i]);
+      }
+    delete layers;
+    delete pointsGrid;
+    delete points;
+  }
+
+  void writePoints(FILE* fp)
+  {
+    fwrite(points,sizeof(std::complex<double>),pointsAdded,fp);
+  }
+
+private:
   void grow(int n)
   {
     int i;
@@ -61,13 +85,6 @@ public:
       }
   }
 
-  writePoints(FILE* fp)
-  {
-    fwrite(points,sizeof(std::complex<double>),pointsAdded,fp);
-  }
-
-private:
-
   void aggregate()
   {
     setStartPoint();
@@ -76,8 +93,8 @@ private:
       {
 	findAndMakeStep();
       }
-    addParticle(currPoint);
-    markParticle(currPoint);
+    addParticle();
+    markParticle();
     updateStartDist();
   }
 
@@ -138,7 +155,7 @@ private:
   {
     int index1;
     int index2;
-  }
+  };
     
   bool isMarkedAtLayer(int layer)
   {
@@ -173,9 +190,9 @@ private:
 	  {
 	    if (dist2<nearestInfo.distToNearest2)
 	      {
-		nearest=points[vec[k]];
+		nearestInfo.nearest=points[vec[k]];
 		nearestInfo.maxSafeDist2 = nearestInfo.distToNearest2;
-		nearestInfo.distToNearest = dist2;
+		nearestInfo.distToNearest2 = dist2;
 	      }
 	    else
 	      {
@@ -206,7 +223,7 @@ private:
 
   void step(int layer)
   {
-    currPoint += layerSizes[layer]*randCirc();
+    currPoint += ((double) layerSizes[layer])*randCirc();
   }
 
   void addParticle()
@@ -219,7 +236,7 @@ private:
   void addToGrid()
   {
     Indices indices = getIndices(pointsGridMesh);
-    pointsGrid[indices.index1*pointGridSize+indices.index2].push_back(pointsAdded);
+    pointsGrid[indices.index1*pointsGridSize+indices.index2].push_back(pointsAdded);
   }
 
   Indices getIndices(double mesh)
@@ -233,7 +250,7 @@ private:
   void markParticle()
   {
     Indices indices;
-    for (layer = layerCount - 1; layer >= 0; layer--)
+    for (int layer = layerCount - 1; layer >= 0; layer--)
       {
 	indices = getIndices(layerMeshes[layer]);
 	setMarks(layer,indices);
@@ -256,7 +273,7 @@ private:
   {
     startDist = std::max(startDist, abs(currPoint) + 2);
     
-    if (startDist>maxRadius)
+    if (startDist>maxRadius_)
       {
 	fprintf(stderr,"Cluster Exceeded maxRadius\n");
 	throw 373;
@@ -264,23 +281,28 @@ private:
   }
 
   double maxRadius_;
+  double startDist;
   
   int layerCount;
   int* layerSizes;
   double* layerMeshes;
   char** layers;
   
-  int pointGridSize;
-  double pointGridMesh;
-  std::vector<int>* pointGrid;
+  int pointsGridSize;
+  double pointsGridMesh;
+  std::vector<int>* pointsGrid;
   
   std::complex<double>* points;
   int pointsAdded;
 
   std::complex<double> currPoint;
-  bool particleFree
+  bool particleFree;
 
   std::mt19937 generator;
   std::uniform_real_distribution<double> unif2PI;
   std::cauchy_distribution<double> cauchy;
-}
+
+  const std::complex<double> cx_1 = std::complex<double>(1.0,0.0);
+  const double PI = 3.1415926535;
+  const double two_PI = 6.2831853072;
+};

@@ -7,10 +7,15 @@
 #include <chrono>
 #include <iostream>
 
-class ClusterTree
+#ifndef SECOND_H
+#define SECOND_H
+#include "baseDLA.hpp"
+#endif
+
+class ClusterTree : public baseDLA
 {
 public:
-  ClusterTree(const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
+  ClusterTree(const int numberOfParticles, const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
   {
     maxDepth_ = ceil(log2(maxRadius / halfMinLength));
     //std::cout << "maxDepth" << maxDepth_ << std::endl;
@@ -50,6 +55,8 @@ public:
 
     gettingNearest = false;
     addingPoint = false;
+
+    grow(numberOfParticles-1);
   }
 
   ~ClusterTree()
@@ -59,6 +66,12 @@ public:
     delete root_;
   }
 
+  void writePoints(FILE* fp)
+  {
+    writeRecursive(root_, 0, fp);
+  }
+
+private:
   void grow(int n)
   {
     int i;
@@ -68,13 +81,6 @@ public:
 	aggregate();
       }
   }
-
-  void writePoints(FILE* fp)
-  {
-    writeRecursive(root_, 0, fp);
-  }
-
-private:
 
   struct Node
   {
