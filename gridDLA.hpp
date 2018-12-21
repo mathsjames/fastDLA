@@ -5,12 +5,7 @@
 #include <exception>
 #include <cmath>
 
-#ifndef SECOND_H
-#define SECOND_H
-#include "baseDLA.hpp"
-#endif
-
-class ClusterGrid : public baseDLA
+class ClusterGrid
 {
 public:
   ClusterGrid(const int numberOfParticles, const double maxRadius, const double minLength = 1, const double minPointGridMesh = 4, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())

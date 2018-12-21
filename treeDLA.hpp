@@ -7,12 +7,7 @@
 #include <chrono>
 #include <iostream>
 
-#ifndef SECOND_H
-#define SECOND_H
-#include "baseDLA.hpp"
-#endif
-
-class ClusterTree : public baseDLA
+class ClusterTree
 {
 public:
   ClusterTree(const int numberOfParticles, const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
