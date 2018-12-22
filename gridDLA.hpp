@@ -103,7 +103,8 @@ private:
 
   std::complex<double> randCirc()
   {
-    return std::exp(std::complex<double>(0,unif2PI(generator)));
+    double theta = unif2PI(generator);
+    return std::complex<double>(sin(theta),cos(theta));
   }
 
   struct NearestInfo
