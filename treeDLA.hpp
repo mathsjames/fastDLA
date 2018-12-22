@@ -10,8 +10,9 @@
 class ClusterTree
 {
 public:
-  ClusterTree(const int numberOfParticles, const double maxRadius, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
+  ClusterTree(const int numberOfParticles, const int halfMinLength = 2, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count()) : root_(nullptr)
   {
+    double maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
     maxDepth_ = ceil(log2(maxRadius / halfMinLength));
     //std::cout << "maxDepth" << maxDepth_ << std::endl;
     //std::cout << "sizeof Node" << sizeof(Node) << std::endl;

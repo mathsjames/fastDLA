@@ -8,9 +8,9 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, const double maxRadius, const double minLength = 8, const double minPointGridMesh = 8, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
+  ClusterGrid(const int numberOfParticles, const double minLength = 8, const double minPointGridMesh = 8, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
   {
-    maxRadius_ = maxRadius;
+    maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
     
     layerCount = 1 + ceil(log2(maxRadius/minLength));
     layerSizes = new int[layerCount];
@@ -278,8 +278,8 @@ private:
   Indices getIndices(double mesh)
   {
     Indices indices;
-    indices.index1 = floor((maxRadius_-std::imag(currPoint))/mesh);
-    indices.index2 = floor((maxRadius_+std::real(currPoint))/mesh);
+    indices.index1 = floor((maxRadius-std::imag(currPoint))/mesh);
+    indices.index2 = floor((maxRadius+std::real(currPoint))/mesh);
     return indices;
   }
 
@@ -309,14 +309,15 @@ private:
   {
     startDist = std::max(startDist, abs(currPoint) + 2);
     
-    if (startDist>maxRadius_)
+    if (startDist>maxRadius)
       {
 	fprintf(stderr,"Cluster Exceeded maxRadius\n");
+	std::cout << "Points Added:" << pointsAdded << std::endl;
 	throw 373;
       }
   }
 
-  double maxRadius_;
+  double maxRadius;
   double startDist;
   
   int layerCount;
