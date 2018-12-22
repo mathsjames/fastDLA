@@ -116,7 +116,7 @@ private:
   void findAndMakeStep()
   {
     //std::cout << "currpoint:" << currPoint << std::endl;
-    if (abs(currPoint)>1.1*startDist)
+    if (abs(currPoint)>startDist+0.00001)
       {
 	resetParticle();
       }
