@@ -8,7 +8,7 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, const double maxRadius, const double minLength = 1, const double minPointGridMesh = 4, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
+  ClusterGrid(const int numberOfParticles, const double maxRadius, const double minLength = 8, const double minPointGridMesh = 8, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
   {
     maxRadius_ = maxRadius;
     
@@ -54,15 +54,15 @@ public:
 
   ~ClusterGrid()
   {
-    delete layerSizes;
-    delete layerMeshes;
+    delete[] layerSizes;
+    delete[] layerMeshes;
     for (int i=0; i<layerCount; i++)
       {
-	delete (layers[i]);
+	delete[] (layers[i]);
       }
-    delete layers;
-    delete pointsGrid;
-    delete points;
+    delete[] layers;
+    delete[] pointsGrid;
+    delete[] points;
   }
 
   void writePoints(FILE* fp)
@@ -88,6 +88,7 @@ private:
       {
 	findAndMakeStep();
       }
+    //std::cout << "Adding Particle at:" << currPoint << std::endl;
     addParticle();
     markParticle();
     updateStartDist();
@@ -114,16 +115,50 @@ private:
   
   void findAndMakeStep()
   {
-    int best = findBestLayer();
-    if (best == layerCount)
+    //std::cout << "currpoint:" << currPoint << std::endl;
+    if (abs(currPoint)>1.1*startDist)
       {
-	NearestInfo nearestInfo = findNearest();
-	finishingStep(nearestInfo);
+	resetParticle();
       }
     else
       {
-	step(best);
+	int best = findBestLayer();
+	//std::cout << "best " << best << std::endl;
+	if (best == layerCount)
+	  {
+	    NearestInfo nearestInfo = findNearest();
+	    if (nearestInfo.distToNearest2<pointsGridMesh*pointsGridMesh)
+	      {
+		//std::cout << "Taking Finishing step with nearest " << nearestInfo.nearest << " dist2 " << nearestInfo.distToNearest2 << " next dist " << nearestInfo.maxSafeDist2 << std::endl;
+		finishingStep(nearestInfo);
+	      }
+	    else
+	      {
+		step(pointsGridMesh-2);
+	      }
+	  }
+	else
+	  {
+	    step(layerMeshes[best]-2);
+	  }
       }
+  }
+
+  void resetParticle()
+  {
+    double ratioOut = abs(currPoint)/startDist;
+    std::complex<double> z = harmonicToCircle(ratioOut);
+    currPoint *= z/ratioOut;
+    //std::cout << "reset to:" << currPoint << std::endl;
+  }
+
+  std::complex<double> harmonicToCircle(double absPos)
+  {
+    std::complex<double> z = randCirc();
+    z = (z-cx_1)/(z+cx_1);
+    z *= (absPos-1)/(absPos+1);
+    z = -(z+cx_1)/(z-cx_1);
+    return z;
   }
 
   int findBestLayer()
@@ -154,14 +189,17 @@ private:
     
   bool isMarkedAtLayer(int layer)
   {
-    Indices indices = getIndices(layer);
+    Indices indices = getIndices(layerMeshes[layer]);
+    //std::cout << "indices " << indices.index1 << " " << indices.index2 << " layer " << layer << " mesh " << layerMeshes[layer] << std::endl;
     return (bool) layers[layer][indices.index1*layerSizes[layer]+indices.index2];
   }
 
   NearestInfo findNearest()
   {
     NearestInfo nearestInfo;
+    nearestInfo.nearest = std::complex<double>(0.0,0.0);
     nearestInfo.maxSafeDist2 = pointsGridMesh*pointsGridMesh;
+    nearestInfo.distToNearest2 = nearestInfo.maxSafeDist2;
     Indices indices = getIndices(pointsGridMesh);
     int i, j;
     for (i=std::max(indices.index1-1,0);i<std::min(indices.index1+2,pointsGridSize);i++)
@@ -171,16 +209,19 @@ private:
 	    checkForCloser(i,j,nearestInfo);
 	  }
       }
+    return nearestInfo;
   }
 
   void checkForCloser(int i, int j, NearestInfo& nearestInfo)
   {
     std::vector<int> vec = pointsGrid[i*pointsGridSize+j];
     double dist2;
+    std::complex<double> diff;
     int k;
     for (k=0;k<vec.size();k++)
       {
-	dist2 = abs(currPoint-points[vec[k]]);
+	diff = currPoint-points[vec[k]];
+	dist2 = real(diff)*real(diff)+imag(diff)*imag(diff);
 	if (dist2<nearestInfo.maxSafeDist2)
 	  {
 	    if (dist2<nearestInfo.distToNearest2)
@@ -216,9 +257,9 @@ private:
     particleFree = (y2>=0);
   }
 
-  void step(int layer)
+  void step(double length)
   {
-    currPoint += ((double) layerSizes[layer])*randCirc();
+    currPoint += length*randCirc();
   }
 
   void addParticle()
