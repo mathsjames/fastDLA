@@ -8,11 +8,11 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, const double minLength = 8, const double minPointGridMesh = 8, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count())
+  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24)
   {
     maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
     
-    layerCount = 1 + ceil(log2(maxRadius/minLength));
+    layerCount = 1 + ceil(log2(maxRadius/maxMinMesh));
     layerSizes = new int[layerCount];
     layerMeshes = new double[layerCount];
     layers = new char*[layerCount];
@@ -28,7 +28,7 @@ public:
 	std::fill(layers[i],layers[i]+layerSizes[i]*layerSizes[i],0);
       }
     
-    pointsGridSize = floor(2*maxRadius/minPointGridMesh);
+    pointsGridSize = floor(2*maxRadius/layerMeshes[layerCount-1]);
     pointsGridMesh = 2*maxRadius/pointsGridSize;
     pointsGrid = new std::vector<int>[pointsGridSize*pointsGridSize];
     std::fill(pointsGrid, pointsGrid+pointsGridSize*pointsGridSize, std::vector<int>(0));
