@@ -7,12 +7,18 @@ int main(int argc, char** argv)
   int n, seed;
   char filename[1000];
   char method=0;
+  char resultType='w';
+
+  int distsCount=10000;
+  double dists[10000];//must match above line
 
   seed=time(NULL);
   filename[0]='\0';
 
   switch(argc-1)
     {
+    case 5:
+      sscanf(argv[5],"%c",&resultType);
     case 4:
       sscanf(argv[4],"%d",&seed);
     case 3:
@@ -33,6 +39,14 @@ int main(int argc, char** argv)
       {
 	ClusterGrid grid(n);
 
+	if (resultType=='d')
+	  {
+	    for (int i=0;i<distsCount;i++)
+	      {
+		dists[i]=grid.getNormalisedDist();
+	      }
+	  }
+
         if (filename[0])
 	  {
 	    FILE* fp=fopen(filename, "w");
@@ -43,7 +57,14 @@ int main(int argc, char** argv)
 	      }
 	    else
 	      {
-		grid.writePoints(fp);
+		if (resultType=='w')
+		  {
+		    grid.writePoints(fp);
+		  }
+		else if (resultType=='d')
+		  {
+		    fwrite(dists,sizeof(double),distsCount,fp);
+		  }
 		fclose(fp);
 		printf("Written cluster to file\n");
 	      }

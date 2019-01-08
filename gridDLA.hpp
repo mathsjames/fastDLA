@@ -70,6 +70,24 @@ public:
     fwrite(points,sizeof(std::complex<double>),pointsAdded,fp);
   }
 
+  double getNormalisedDist()
+  {
+    currPoint = (startDist-2)*(unif2PI(generator)/two_PI)*randCirc();
+    double dist2=abs(currPoint)*abs(currPoint);
+    double newDist2;
+    std::complex<double> diff;
+    for (int i=0;i<pointsAdded;i++)
+      {
+	diff=points[i]-currPoint;
+	newDist2=real(diff)*real(diff)+imag(diff)*imag(diff);
+	if (newDist2<dist2)
+	  {
+	    dist2=newDist2;
+	  }
+      }
+    return sqrt(dist2)/(startDist-2);
+  }
+
 private:
   void grow(int n)
   {
