@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     {
     case 'g':
       {
-	ClusterGrid grid(n);
+	ClusterGrid grid(n,seed);
 
 	if (resultType=='d')
 	  {
