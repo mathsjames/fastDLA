@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	      {
 		dists[i]=grid.getNormalisedDist();
 	      }
-	    qsort(dists,distsCount,compareDouble);
+	    qsort(dists,distsCount,sizeof(double),compareDouble);
 	  }
 
         if (filename[0])
