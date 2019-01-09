@@ -8,8 +8,13 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24)
+  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24, const double scaleOfPointsGrid = 1)
   {
+    if (scaleOfPointsGrid<1)
+      {
+	fprintf(stderr,"ScaleOfPointsGrid must be greater than 1\n");
+	throw 737;
+      }
     maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
     
     layerCount = 1 + ceil(log2(maxRadius/maxMinMesh));
@@ -28,7 +33,7 @@ public:
 	std::fill(layers[i],layers[i]+layerSizes[i]*layerSizes[i],0);
       }
     
-    pointsGridSize = floor(2*maxRadius/layerMeshes[layerCount-1]);
+    pointsGridSize = floor(2*maxRadius/(scaleOfPointsGrid*layerMeshes[layerCount-1]));
     pointsGridMesh = 2*maxRadius/pointsGridSize;
     pointsGrid = new std::vector<int>[pointsGridSize*pointsGridSize];
     std::fill(pointsGrid, pointsGrid+pointsGridSize*pointsGridSize, std::vector<int>(0));
@@ -72,13 +77,25 @@ public:
 
   double getNormalisedDist()
   {
-    currPoint = (startDist-2)*(unif2PI(generator)/two_PI)*randCirc();
-    double dist2=abs(currPoint)*abs(currPoint);
+    std::complex<double> point;
+    std::uniform_real_distribution<double> unif1;
+    unif1 = std::uniform_real_distribution<double>(-1.0,1.0);
+    int notfound=1;
+    while (notfound)
+      {
+	point = std::complex<double>(unif1(generator),unif1(generator));
+	if (abs(point)<1)
+	  {
+	    notfound=0;
+	    point*=(startDist-2)*1.1;
+	  }
+      }
+    double dist2=abs(point)*abs(point);
     double newDist2;
     std::complex<double> diff;
     for (int i=0;i<pointsAdded;i++)
       {
-	diff=points[i]-currPoint;
+	diff=points[i]-point;
 	newDist2=real(diff)*real(diff)+imag(diff)*imag(diff);
 	if (newDist2<dist2)
 	  {
