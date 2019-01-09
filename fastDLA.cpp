@@ -1,6 +1,14 @@
 #include "treeDLA.hpp"
 #include "gridDLA.hpp"
 #include <iostream>
+#include <stdlib.h>
+
+int compareDouble (const void * a, const void * b)
+{
+  if ( *(double*)a <  *(double*)b ) return -1;
+  if ( *(double*)a >  *(double*)b ) return 1;
+  if ( *(double*)a == *(double*)b ) return 0;
+}
 
 int main(int argc, char** argv)
 {
@@ -45,6 +53,7 @@ int main(int argc, char** argv)
 	      {
 		dists[i]=grid.getNormalisedDist();
 	      }
+	    qsort(dists,distsCount,compareDouble);
 	  }
 
         if (filename[0])
