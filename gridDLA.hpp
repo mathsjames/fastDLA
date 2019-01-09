@@ -8,7 +8,7 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24, const double scaleOfPointsGrid = 1)
+  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24, const double scaleOfPointsGrid = 2)
   {
     if (scaleOfPointsGrid<1)
       {
