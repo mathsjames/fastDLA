@@ -8,14 +8,22 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double maxMinMesh = 24, const double scaleOfPointsGrid = 2)
+  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double nRFactor = 1, const double maxMinMesh = 24, const double scaleOfPointsGrid = 2)
   {
     if (scaleOfPointsGrid<1)
       {
 	fprintf(stderr,"ScaleOfPointsGrid must be greater than 1\n");
 	throw 737;
       }
-    maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
+    noiseReductionFactor=nRFactor;
+    if (noiseReductionFactor==1)
+      {
+	maxRadius = 22+2.2*pow(numberOfParticles,1/1.7);
+      }
+    else
+      {
+	maxRadius = 20+4*pow(numberOfParticles*noiseReductionFactor,1/1.7);
+      }
     
     layerCount = 1 + ceil(log2(maxRadius/maxMinMesh));
     layerSizes = new int[layerCount];
@@ -291,6 +299,10 @@ private:
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
     currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
     particleFree = (y2>=0);
+    if (noiseReductionFactor!=1 && !particleFree)
+      {
+	currPoint=noiseReductionFactor*currPoint+nearestInfo.nearest*(1-noiseReductionFactor);
+      }
   }
 
   void step(double length)
@@ -354,6 +366,8 @@ private:
   }
 
   double maxRadius;
+  double noiseReductionFactor;
+  
   double startDist;
   
   int layerCount;

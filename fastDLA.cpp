@@ -16,6 +16,7 @@ int main(int argc, char** argv)
   char filename[1000];
   char method=0;
   char resultType='w';
+  double noiseReductionFactor=1;
 
   int distsCount=10000;
   double dists[10000];//must match above line
@@ -25,6 +26,8 @@ int main(int argc, char** argv)
 
   switch(argc-1)
     {
+    case 6:
+      sscanf(argv[6],"%lf",&noiseReductionFactor);
     case 5:
       sscanf(argv[5],"%c",&resultType);
     case 4:
@@ -45,7 +48,7 @@ int main(int argc, char** argv)
     {
     case 'g':
       {
-	ClusterGrid grid(n,seed);
+	ClusterGrid grid(n,seed,noiseReductionFactor,6+noiseReductionFactor*18,1+noiseReductionFactor);
 
 	if (resultType=='d')
 	  {
