@@ -285,6 +285,8 @@ private:
   
   void finishingStep(NearestInfo nearestInfo)
   {
+    std::complex<double> backup=currPoint;
+
     double d1 = sqrt(nearestInfo.distToNearest2)/2;
     double d2 = sqrt(nearestInfo.maxSafeDist2)/2;
     double theta=acos((1+(d2-1)*(d2-1)-d1*d1)/(2*(d2-1)));
@@ -299,6 +301,11 @@ private:
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
     currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
     particleFree = (y2>=0);
+    if (std::isnan(real(currPoint)) && nearestInfo.maxSafeDist2<4.01)
+      {
+	currPoint=backup;
+	particleFree=0;
+      }
     if (noiseReductionFactor!=1 && !particleFree)
       {
 	currPoint=noiseReductionFactor*currPoint+nearestInfo.nearest*(1-noiseReductionFactor);
