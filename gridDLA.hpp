@@ -301,7 +301,11 @@ private:
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
     currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
     particleFree = (y2>=0);
-    if (std::isnan(real(currPoint)) && nearestInfo.maxSafeDist2<4.01)
+    if (pointsAdded==1255802)
+      {
+	std::cout << currPoint << d1 << " " << d2 << y1 << y2 << std::endl;
+      }
+    if (currPoint==backup || (std::isnan(real(currPoint)) && nearestInfo.maxSafeDist2<4.01))
       {
 	currPoint=backup;
 	particleFree=0;
