@@ -5,10 +5,10 @@
 #include <exception>
 #include <cmath>
 
-class ClusterGrid
+class FastCluster
 {
 public:
-  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double nRFactor = 1, double maxMinMesh = 0, double scaleOfPointsGrid = 0)
+  FastCluster(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double nRFactor = 1, double maxMinMesh = 0, double scaleOfPointsGrid = 0)
   {
     if (maxMinMesh==0)
       {
@@ -76,7 +76,7 @@ public:
     grow(numberOfParticles-1);
   }
 
-  ~ClusterGrid()
+  ~FastCluster()
   {
     delete[] layerSizes;
     delete[] layerMeshes;
@@ -312,10 +312,6 @@ private:
     std::complex<double> y4=(-beta*y3+D*alpha)/(-y3+D);
     currPoint += (std::complex<double>(0.0,1.0)*y4*(nearestInfo.nearest-currPoint)/d1);
     particleFree = (y2>=0);
-    if (pointsAdded==1255802)
-      {
-	std::cout << currPoint << d1 << " " << d2 << y1 << y2 << std::endl;
-      }
     if (currPoint==backup || (std::isnan(real(currPoint)) && nearestInfo.maxSafeDist2<4.01))
       {
 	currPoint=backup;
@@ -381,8 +377,7 @@ private:
     
     if (startDist>maxRadius)
       {
-	fprintf(stderr,"Cluster Exceeded maxRadius\n");
-	std::cout << "Points Added:" << pointsAdded << std::endl;
+	fprintf(stderr,"Cluster Exceeded maxRadius, after %d points\n",pointsAdded);
 	throw 373;
       }
   }

@@ -27,7 +27,7 @@ int main(int argc, char** argv)
       return 1;
     }
 
-  ClusterGrid grid(n,seed,noiseReductionFactor);
+  FastCluster grid(n,seed,noiseReductionFactor);
 
   if (filename[0])
     {
