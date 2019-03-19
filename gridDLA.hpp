@@ -8,13 +8,24 @@
 class ClusterGrid
 {
 public:
-  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double nRFactor = 1, const double maxMinMesh = 24, const double scaleOfPointsGrid = 2)
+  ClusterGrid(const int numberOfParticles, unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count(), const double nRFactor = 1, double maxMinMesh = 0, double scaleOfPointsGrid = 0)
   {
+    if (maxMinMesh==0)
+      {
+	maxMinMesh=6+nRFactor*18;
+      }
+    
+    if (scaleOfPointsGrid==0)
+      {
+	scaleOfPointsGrid=1+nRFactor;
+      }
+    
     if (scaleOfPointsGrid<1)
       {
 	fprintf(stderr,"ScaleOfPointsGrid must be greater than 1\n");
 	throw 737;
       }
+    
     noiseReductionFactor=nRFactor;
     if (noiseReductionFactor==1)
       {
