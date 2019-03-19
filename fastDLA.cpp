@@ -1,4 +1,4 @@
-#include "gridDLA.hpp"
+#include "fastDLA.hpp"
 #include <iostream>
 #include <stdlib.h>
 
