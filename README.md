@@ -14,10 +14,6 @@ fastDLA n filename seed noiseReductionFactor
 
 Alternatively the header file fastDLA.hpp can be included in a C++ project, it provides a single class FastCluster whose constructor takes arguments n, seed and noiseReductionFactor (as before the latter two are optional) and whose variable points is an array of std::complex<double> which after construction contains the points of the cluster.
 
-## Licence
-
-TODO
-
 ## Future Alterations
 
 This code may be updated over time to improve performance but we will endeavour to keep the usage the same (of course old versions will remain available in any case). Feature suggestions are welcome, though no promise is made to implement any requests if there is a research need and it is not too complicated to implement I would be happy to dive back into the code to stop someone else from having to do so.
