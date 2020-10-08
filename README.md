@@ -1,8 +1,8 @@
 # fastDLA
 
-This repository provides a program for simulating off-grid diffusion limited aggregation (DLA) due to [Peter Meakin](https://link.aps.org/doi/10.1103/PhysRevA.27.1495).
+This repository provides a program for simulating off-grid diffusion limited aggregation (DLA). A model of aggregation due to [Peter Meakin](https://link.aps.org/doi/10.1103/PhysRevA.27.1495). It implements an algorithm due to [Peter Ossadnik](https://www.sciencedirect.com/science/article/abs/pii/037843719190224Z).
 
-The code runs in O(n polylog(n)) time (within a polylog(n) factor of optimal) and is explained and analysed in a forthcoming paper. The header file alone can be included in a C++ project or the cpp file can be compiled to generate clusters and save them to file.
+The main body of the code runs in O(n polylog(n)) time (within a polylog(n) factor of optimal) and is explained and analysed in a forthcoming paper. Whilst the initial memory allocation and zeroing requires O(n^1.18) time and space, in practice this is not the main time cost. The header file alone can be included in a C++ project or the cpp file can be compiled to generate clusters and save them to file.
 
 ## Usage
 
